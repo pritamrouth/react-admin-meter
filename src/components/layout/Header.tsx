@@ -1,5 +1,23 @@
 
 import React from 'react';
+import { Link } from 'react-router-dom';
+// import { useNavigate } from "react-router-dom";
+// import { useAuth } from "@/context/AuthContext";
+
+
+// Add these inside the Header component
+// const { signOut } = useAuth();
+// const navigate = useNavigate();
+
+// const handleLogout = async () => {
+//   try {
+//     await signOut();
+//     navigate("/login");
+//   } catch (error) {
+//     console.error("Error logging out:", error);
+//   }
+// };
+
 import { 
   Menu, 
   Bell, 
@@ -74,19 +92,21 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar, sidebarOpen }) =>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
+              <DropdownMenuItem asChild>
+                <Link to="/profile">
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Profile</span>
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Settings</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              {/* <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Logout</span>
-              </DropdownMenuItem>
+              </DropdownMenuItem> */}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

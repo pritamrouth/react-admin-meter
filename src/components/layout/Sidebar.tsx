@@ -7,7 +7,6 @@ import {
   Users, 
   Package, 
   Settings, 
-  LogOut, 
   FileText, 
   ShoppingCart, 
   ChevronRight,
@@ -113,12 +112,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
                   <span className="ml-3">Settings</span>
                 </Link>
               </li>
-              <li>
+              {/* <li>
                 <button className="w-full flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group">
                   <LogOut className="w-5 h-5 text-gray-500 group-hover:text-gray-900" />
                   <span className="ml-3">Logout</span>
                 </button>
-              </li>
+              </li> */}
             </ul>
           </nav>
         </div>
