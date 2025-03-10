@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { SidebarLayout } from '@/components/layout/SidebarLayout';
 import { Card } from '@/components/ui/card';
@@ -10,7 +9,8 @@ import {
   PieChart,
   AlertTriangle,
   CheckCircle2,
-  Clock
+  Clock,
+  Settings
 } from 'lucide-react';
 import {
   CartesianGrid,
@@ -23,10 +23,10 @@ import {
   AreaChart,
   Area,
   BarChart,
-  Bar
+  Bar,
+  Pie
 } from "recharts";
 
-// Sample data for charts
 const visitorData = [
   { name: 'Jan', value: 400 },
   { name: 'Feb', value: 300 },
@@ -111,7 +111,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Stat Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         <Card className="stat-card">
           <h6 className="stat-card-title">Total Page Views</h6>
@@ -170,7 +169,6 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div className="lg:col-span-2">
           <div className="flex justify-between items-center mb-4">
@@ -218,7 +216,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Orders Table & Analytics */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div className="lg:col-span-2">
           <h5 className="text-lg font-semibold mb-4">Recent Orders</h5>
@@ -275,7 +272,7 @@ const Dashboard = () => {
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
                   <Tooltip />
-                  <pie 
+                  <Pie 
                     data={[
                       { name: 'Growth', value: 45.14, fill: '#4ade80' },
                       { name: 'Expenses', value: 0.58, fill: '#f59e0b' },
@@ -293,7 +290,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Sales Report */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <h5 className="text-lg font-semibold mb-4">Sales Report</h5>
