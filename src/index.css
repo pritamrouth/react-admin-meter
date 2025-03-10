@@ -1,6 +1,9 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&display=swap');
 
 @layer base {
   :root {
@@ -35,20 +38,17 @@
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    --success: 142 69% 58%;
+    --warning: 38 92% 50%;
+    --danger: 0 84% 60%;
   }
 
   .dark {
@@ -96,6 +96,28 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-public-sans;
+  }
+}
+
+@layer components {
+  .stat-card {
+    @apply rounded-md shadow-sm p-5;
+  }
+  
+  .stat-card-title {
+    @apply text-sm font-medium text-muted-foreground mb-2;
+  }
+  
+  .stat-card-value {
+    @apply text-2xl font-semibold mb-2 flex items-center gap-2;
+  }
+  
+  .stat-card-badge {
+    @apply text-xs px-2 py-1 rounded-full inline-flex items-center gap-1;
+  }
+  
+  .stat-card-footer {
+    @apply text-xs text-muted-foreground;
   }
 }
