@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { SidebarLayout } from '@/components/layout/SidebarLayout';
 import { Card } from '@/components/ui/card';
@@ -6,7 +7,7 @@ import {
   TrendingUp, 
   TrendingDown, 
   BarChart3,
-  PieChart,
+  PieChart as PieChartIcon,
   AlertTriangle,
   CheckCircle2,
   Clock,
@@ -24,7 +25,8 @@ import {
   Area,
   BarChart,
   Bar,
-  Pie
+  Pie,
+  PieChart
 } from "recharts";
 
 const visitorData = [
@@ -54,6 +56,16 @@ const salesData = [
   { name: 'Apr', products: 2780, services: 3908 },
   { name: 'May', products: 1890, services: 4800 },
   { name: 'Jun', products: 2390, services: 3800 }
+];
+
+const analyticsData = [
+  { name: 'Jun', value: 250 },
+  { name: 'Jul', value: 90 },
+  { name: 'Aug', value: 300 },
+  { name: 'Sep', value: 200 },
+  { name: 'Oct', value: 280 },
+  { name: 'Nov', value: 100 },
+  { name: 'Dec', value: 200 }
 ];
 
 const ordersData = [
@@ -270,20 +282,28 @@ const Dashboard = () => {
             </div>
             <div className="p-4">
               <ResponsiveContainer width="100%" height={200}>
-                <PieChart>
-                  <Tooltip />
-                  <Pie 
-                    data={[
-                      { name: 'Growth', value: 45.14, fill: '#4ade80' },
-                      { name: 'Expenses', value: 0.58, fill: '#f59e0b' },
-                      { name: 'Risk', value: 10, fill: '#3b82f6' }
-                    ]}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    label
+                <LineChart data={analyticsData} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                  <XAxis 
+                    dataKey="name" 
+                    axisLine={false} 
+                    tickLine={false}
+                    tick={{ fontSize: 12, fill: '#666' }}
                   />
-                </PieChart>
+                  <YAxis hide />
+                  <Tooltip />
+                  <Line 
+                    type="natural" 
+                    dataKey="value" 
+                    stroke="#f59e0b" 
+                    strokeWidth={3}
+                    dot={false}
+                    activeDot={{ r: 6, fill: "#f59e0b", stroke: "white", strokeWidth: 2 }}
+                    isAnimationActive={true}
+                    animationDuration={1500}
+                    animationEasing="ease-in-out"
+                  />
+                </LineChart>
               </ResponsiveContainer>
             </div>
           </Card>
@@ -332,7 +352,7 @@ const Dashboard = () => {
               <div className="p-4">
                 <div className="flex items-center">
                   <div className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-100 text-blue-600">
-                    <PieChart className="w-5 h-5" />
+                    <PieChartIcon className="w-5 h-5" />
                   </div>
                   <div className="ml-3 flex-1">
                     <h6 className="font-medium">Order #984947</h6>
