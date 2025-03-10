@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { 
   Menu, 
   Bell, 
@@ -8,7 +8,8 @@ import {
   ChevronDown, 
   User, 
   Settings,
-  LogOut
+  LogOut,
+  X
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -27,15 +28,15 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ toggleSidebar, sidebarOpen }) => {
   return (
-    <header className="bg-white border-b px-4 py-3">
+    <header className="bg-white border-b px-4 py-3 sticky top-0 z-20">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <button 
             onClick={toggleSidebar}
-            className="text-gray-500 hover:text-gray-700 focus:outline-none"
+            className="text-gray-500 hover:text-gray-700 focus:outline-none p-1 rounded-md hover:bg-gray-100 transition-colors"
             aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
           >
-            <Menu className="w-6 h-6" />
+            {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
           
           <div className="hidden md:flex items-center rounded-md overflow-hidden bg-gray-100 px-3 py-1.5">
