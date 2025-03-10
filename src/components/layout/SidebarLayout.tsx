@@ -21,9 +21,9 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children }) => {
       
       <div className={cn(
         "flex flex-col flex-1 overflow-hidden transition-all duration-300",
-        sidebarOpen ? "ml-64" : "ml-0"
+        sidebarOpen ? "md:ml-64" : "ml-0"
       )}>
-        <Header toggleSidebar={toggleSidebar} />
+        <Header toggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen} />
         <main className="flex-1 overflow-y-auto p-6">
           {children}
         </main>

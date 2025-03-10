@@ -22,9 +22,10 @@ import {
 
 interface HeaderProps {
   toggleSidebar: () => void;
+  sidebarOpen: boolean;
 }
 
-export const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
+export const Header: React.FC<HeaderProps> = ({ toggleSidebar, sidebarOpen }) => {
   return (
     <header className="bg-white border-b px-4 py-3">
       <div className="flex items-center justify-between">
@@ -32,6 +33,7 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
           <button 
             onClick={toggleSidebar}
             className="text-gray-500 hover:text-gray-700 focus:outline-none"
+            aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
           >
             <Menu className="w-6 h-6" />
           </button>
