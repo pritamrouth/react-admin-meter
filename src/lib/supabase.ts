@@ -222,15 +222,19 @@ export const isUserAdmin = (user: any) => {
   );
 };
 
-// New function to get all user data (only available to admins)
+// Fixed function to get all user data (only available to admins)
 export const getAllUserData = async (requestorEmail: string) => {
   try {
-    const { data, error } = await supabase.rpc('get_all_user_data', {
-      requestor_email: requestorEmail
+    // The issue is here - we're using await with an object that has a then() method
+    // but isn't a proper Promise. Let's fix it by using a proper Promise pattern:
+    return new Promise((resolve, reject) => {
+      supabase.rpc('get_all_user_data', {
+        requestor_email: requestorEmail
+      }).then(({ data, error }) => {
+        if (error) reject(error);
+        else resolve(data);
+      });
     });
-
-    if (error) throw error;
-    return data;
   } catch (error: any) {
     console.error('Error fetching all user data:', error.message);
     throw error;
