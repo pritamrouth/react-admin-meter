@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { SidebarLayout } from '@/components/layout/SidebarLayout';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { supabase, isUserAdmin } from '@/lib/supabase';
+import { supabase, isUserAdmin, getAllUserData } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Shield, 
@@ -29,15 +28,42 @@ interface User {
   };
 }
 
+// Interface for detailed user data
+interface DetailedUser extends User {
+  name?: string;
+  role?: string;
+  last_sign_in?: string;
+  app_metadata?: {
+    provider?: string;
+  };
+}
+
 const Users = () => {
   const [users, setUsers] = useState<User[]>([]);
+  const [detailedUsers, setDetailedUsers] = useState<DetailedUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
   
+  // Fetch current user to determine if admin
+  const fetchCurrentUser = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setCurrentUserEmail(session.user.email);
+        setIsAdmin(isUserAdmin(session.user));
+      }
+    } catch (error) {
+      console.error('Error fetching current user:', error);
+    }
+  };
+
   const fetchUsers = async () => {
     setLoading(true);
     try {
+      // First fetch basic user list
       const { data, error } = await supabase.auth.admin.listUsers();
       
       if (error) {
@@ -53,7 +79,20 @@ const Users = () => {
           user_metadata: user.user_metadata || {}
         }));
         setUsers(formattedUsers as User[]);
-        console.log('Fetched users:', formattedUsers);
+        
+        // If admin, also fetch detailed user data
+        if (isAdmin && currentUserEmail) {
+          try {
+            const detailedData = await getAllUserData(currentUserEmail);
+            if (detailedData) {
+              setDetailedUsers(detailedData);
+              console.log('Fetched detailed user data:', detailedData);
+            }
+          } catch (detailError: any) {
+            console.warn('Could not fetch detailed user data:', detailError.message);
+            // Continue using basic user data
+          }
+        }
       } else {
         console.log('No users found in the data');
         setUsers([]);
@@ -72,8 +111,14 @@ const Users = () => {
   };
 
   useEffect(() => {
-    fetchUsers();
+    fetchCurrentUser();
   }, []);
+
+  useEffect(() => {
+    if (currentUserEmail) {
+      fetchUsers();
+    }
+  }, [currentUserEmail, isAdmin]);
 
   const handleBanUser = async (userId: string, isBanned: boolean) => {
     setActionLoading(userId);
@@ -207,6 +252,25 @@ const Users = () => {
       .substring(0, 2);
   };
 
+  // Function to get provider icon/name
+  const getProviderInfo = (provider: string | undefined) => {
+    switch (provider?.toLowerCase()) {
+      case 'google':
+        return { name: 'Google', color: 'text-red-600' };
+      case 'github':
+        return { name: 'GitHub', color: 'text-gray-800' };
+      case 'facebook':
+        return { name: 'Facebook', color: 'text-blue-600' };
+      case 'twitter':
+        return { name: 'Twitter', color: 'text-blue-400' };
+      default:
+        return { name: 'Email', color: 'text-gray-600' };
+    }
+  };
+
+  // Use detailed user data if available
+  const displayUsers = detailedUsers.length > 0 ? detailedUsers : users;
+
   return (
     <SidebarLayout>
       <div className="mb-6">
@@ -220,7 +284,14 @@ const Users = () => {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>All Users</CardTitle>
+          <CardTitle>
+            All Users
+            {isAdmin && (
+              <span className="ml-2 text-xs font-normal text-gray-500">
+                (Admin View)
+              </span>
+            )}
+          </CardTitle>
           <Button 
             variant="outline" 
             size="sm" 
@@ -244,21 +315,27 @@ const Users = () => {
                     <th className="px-4 py-3 text-left font-medium text-gray-500">USER</th>
                     <th className="px-4 py-3 text-left font-medium text-gray-500">STATUS</th>
                     <th className="px-4 py-3 text-left font-medium text-gray-500">ROLE</th>
+                    {isAdmin && (
+                      <th className="px-4 py-3 text-left font-medium text-gray-500">PROVIDER</th>
+                    )}
                     <th className="px-4 py-3 text-left font-medium text-gray-500">JOINED</th>
+                    {isAdmin && (
+                      <th className="px-4 py-3 text-left font-medium text-gray-500">LAST SIGN IN</th>
+                    )}
                     <th className="px-4 py-3 text-right font-medium text-gray-500">ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {users.length > 0 ? (
-                    users.map((user) => (
+                  {displayUsers.length > 0 ? (
+                    displayUsers.map((user) => (
                       <tr key={user.id} className="hover:bg-gray-50">
                         <td className="px-4 py-3">
                           <div className="flex items-center space-x-3">
                             <Avatar className="h-8 w-8">
-                              <AvatarFallback>{getInitials(user.user_metadata?.name || user.email)}</AvatarFallback>
+                              <AvatarFallback>{getInitials(user.user_metadata?.name || user.name || user.email)}</AvatarFallback>
                             </Avatar>
                             <div>
-                              <div className="font-medium">{user.user_metadata?.name || 'No Name'}</div>
+                              <div className="font-medium">{user.user_metadata?.name || user.name || 'No Name'}</div>
                               <div className="text-gray-500 text-xs">{user.email}</div>
                             </div>
                           </div>
@@ -288,9 +365,21 @@ const Users = () => {
                             </span>
                           )}
                         </td>
+                        {isAdmin && (
+                          <td className="px-4 py-3">
+                            <span className={`text-xs ${getProviderInfo(user.app_metadata?.provider).color}`}>
+                              {getProviderInfo(user.app_metadata?.provider).name}
+                            </span>
+                          </td>
+                        )}
                         <td className="px-4 py-3 text-gray-500">
                           {formatDate(user.created_at)}
                         </td>
+                        {isAdmin && (
+                          <td className="px-4 py-3 text-gray-500">
+                            {user.last_sign_in ? formatDate(user.last_sign_in) : 'Never'}
+                          </td>
+                        )}
                         <td className="px-4 py-3 text-right space-x-2">
                           {!isUserAdmin(user) && (
                             <Button
@@ -357,7 +446,7 @@ const Users = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={5} className="text-center py-8 text-gray-500">
+                      <td colSpan={isAdmin ? 7 : 5} className="text-center py-8 text-gray-500">
                         No users found
                       </td>
                     </tr>
