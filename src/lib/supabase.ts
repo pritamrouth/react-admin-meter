@@ -33,25 +33,33 @@ export const supabase = (() => {
                   id: '1',
                   email: 'admin@example.com',
                   created_at: new Date().toISOString(),
-                  user_metadata: { name: 'Admin User', isAdmin: true, role: 'admin' }
+                  last_sign_in: new Date().toISOString(),
+                  user_metadata: { name: 'Admin User', isAdmin: true, role: 'admin' },
+                  app_metadata: { provider: 'google' }
                 },
                 {
                   id: '2',
                   email: 'user@example.com',
                   created_at: new Date().toISOString(),
-                  user_metadata: { name: 'Regular User', isAdmin: false, role: 'user' }
+                  last_sign_in: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+                  user_metadata: { name: 'Regular User', isAdmin: false, role: 'user' },
+                  app_metadata: { provider: 'email' }
                 },
                 {
                   id: '3',
                   email: 'banned@example.com',
                   created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-                  user_metadata: { name: 'Banned User', isAdmin: false, role: 'user', banned: true }
+                  last_sign_in: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+                  user_metadata: { name: 'Banned User', isAdmin: false, role: 'user', banned: true },
+                  app_metadata: { provider: 'github' }
                 },
                 {
                   id: '4',
                   email: 'pritamrouth2003@gmail.com',
                   created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-                  user_metadata: { name: 'Pritam Routh', isAdmin: true, role: 'admin' }
+                  last_sign_in: new Date().toISOString(),
+                  user_metadata: { name: 'Pritam Routh', isAdmin: true, role: 'admin' },
+                  app_metadata: { provider: 'google' }
                 }
               ]
             }, 

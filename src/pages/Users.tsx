@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { SidebarLayout } from '@/components/layout/SidebarLayout';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { supabase, isUserAdmin, getAllUserData } from '@/lib/supabase';
+import { supabase, getCurrentUser } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Shield, 
@@ -13,9 +13,9 @@ import {
   CheckCircle,
   XCircle 
 } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
-// Define our own User interface to match what we expect from Supabase
+// Define the User interface to match Supabase's response
 interface User {
   id: string;
   email: string;
@@ -26,12 +26,6 @@ interface User {
     role?: string;
     banned?: boolean;
   };
-}
-
-// Interface for detailed user data
-interface DetailedUser extends User {
-  name?: string;
-  role?: string;
   last_sign_in?: string;
   app_metadata?: {
     provider?: string;
@@ -40,20 +34,18 @@ interface DetailedUser extends User {
 
 const Users = () => {
   const [users, setUsers] = useState<User[]>([]);
-  const [detailedUsers, setDetailedUsers] = useState<DetailedUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
-  
-  // Fetch current user to determine if admin
+
   const fetchCurrentUser = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setCurrentUserEmail(session.user.email);
-        setIsAdmin(isUserAdmin(session.user));
+      const user = await getCurrentUser();
+      if (user?.email) {
+        setCurrentUserEmail(user.email);
+        setIsAdmin(user.user_metadata?.isAdmin || false);
       }
     } catch (error) {
       console.error('Error fetching current user:', error);
@@ -63,39 +55,12 @@ const Users = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      // First fetch basic user list
       const { data, error } = await supabase.auth.admin.listUsers();
       
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
       
-      // Extract users from the data and ensure they match our interface
-      if (data && data.users) {
-        const formattedUsers = data.users.map(user => ({
-          id: user.id,
-          email: user.email || '',
-          created_at: user.created_at,
-          user_metadata: user.user_metadata || {}
-        }));
-        setUsers(formattedUsers as User[]);
-        
-        // If admin, also fetch detailed user data
-        if (isAdmin && currentUserEmail) {
-          try {
-            const detailedData = await getAllUserData(currentUserEmail);
-            if (detailedData) {
-              setDetailedUsers(detailedData);
-              console.log('Fetched detailed user data:', detailedData);
-            }
-          } catch (detailError: any) {
-            console.warn('Could not fetch detailed user data:', detailError.message);
-            // Continue using basic user data
-          }
-        }
-      } else {
-        console.log('No users found in the data');
-        setUsers([]);
+      if (data?.users) {
+        setUsers(data.users);
       }
     } catch (error: any) {
       console.error('Error fetching users:', error.message);
@@ -118,12 +83,11 @@ const Users = () => {
     if (currentUserEmail) {
       fetchUsers();
     }
-  }, [currentUserEmail, isAdmin]);
+  }, [currentUserEmail]);
 
   const handleBanUser = async (userId: string, isBanned: boolean) => {
     setActionLoading(userId);
     try {
-      // Update user metadata to mark as banned
       const { error } = await supabase.auth.admin.updateUserById(
         userId,
         { user_metadata: { banned: isBanned } }
@@ -131,20 +95,17 @@ const Users = () => {
       
       if (error) throw error;
       
-      // Update local state
       setUsers(users.map(user => 
         user.id === userId 
-          ? { ...user, user_metadata: { ...user.user_metadata, banned: isBanned } } 
+          ? { ...user, user_metadata: { ...user.user_metadata, banned: isBanned } }
           : user
       ));
       
       toast({
         title: "Success",
         description: `User ${isBanned ? 'banned' : 'unbanned'} successfully`,
-        variant: "default"
       });
     } catch (error: any) {
-      console.error(`Error ${isBanned ? 'banning' : 'unbanning'} user:`, error.message);
       toast({
         title: "Error",
         description: `Failed to ${isBanned ? 'ban' : 'unban'} user: ${error.message}`,
@@ -166,16 +127,13 @@ const Users = () => {
       
       if (error) throw error;
       
-      // Remove from local state
       setUsers(users.filter(user => user.id !== userId));
       
       toast({
         title: "Success",
         description: "User deleted successfully",
-        variant: "default"
       });
     } catch (error: any) {
-      console.error('Error deleting user:', error.message);
       toast({
         title: "Error",
         description: `Failed to delete user: ${error.message}`,
@@ -186,31 +144,29 @@ const Users = () => {
     }
   };
 
-  const handleToggleAdmin = async (userId: string, isAdmin: boolean) => {
+  const handleToggleAdmin = async (userId: string, makeAdmin: boolean) => {
     setActionLoading(userId);
     try {
-      // Update user metadata to toggle admin status
       const { error } = await supabase.auth.admin.updateUserById(
         userId,
         { 
           user_metadata: { 
-            isAdmin: isAdmin,
-            role: isAdmin ? 'admin' : 'user'
+            isAdmin: makeAdmin,
+            role: makeAdmin ? 'admin' : 'user'
           } 
         }
       );
       
       if (error) throw error;
       
-      // Update local state
       setUsers(users.map(user => 
         user.id === userId 
           ? { 
               ...user, 
               user_metadata: { 
-                ...user.user_metadata, 
-                isAdmin: isAdmin,
-                role: isAdmin ? 'admin' : 'user' 
+                ...user.user_metadata,
+                isAdmin: makeAdmin,
+                role: makeAdmin ? 'admin' : 'user'
               } 
             } 
           : user
@@ -218,11 +174,9 @@ const Users = () => {
       
       toast({
         title: "Success",
-        description: `User ${isAdmin ? 'promoted to admin' : 'demoted from admin'} successfully`,
-        variant: "default"
+        description: `User ${makeAdmin ? 'promoted to admin' : 'demoted from admin'} successfully`,
       });
     } catch (error: any) {
-      console.error(`Error changing admin status:`, error.message);
       toast({
         title: "Error",
         description: `Failed to change admin status: ${error.message}`,
@@ -243,16 +197,16 @@ const Users = () => {
     });
   };
 
-  const getInitials = (name: string) => {
+  const getInitials = (email: string) => {
+    const name = email.split('@')[0];
     return name
-      .split(' ')
+      .split('.')
       .map(n => n[0])
       .join('')
       .toUpperCase()
       .substring(0, 2);
   };
 
-  // Function to get provider icon/name
   const getProviderInfo = (provider: string | undefined) => {
     switch (provider?.toLowerCase()) {
       case 'google':
@@ -267,9 +221,6 @@ const Users = () => {
         return { name: 'Email', color: 'text-gray-600' };
     }
   };
-
-  // Use detailed user data if available
-  const displayUsers = detailedUsers.length > 0 ? detailedUsers : users;
 
   return (
     <SidebarLayout>
@@ -326,16 +277,16 @@ const Users = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {displayUsers.length > 0 ? (
-                    displayUsers.map((user) => (
+                  {users.length > 0 ? (
+                    users.map((user) => (
                       <tr key={user.id} className="hover:bg-gray-50">
                         <td className="px-4 py-3">
                           <div className="flex items-center space-x-3">
                             <Avatar className="h-8 w-8">
-                              <AvatarFallback>{getInitials(user.user_metadata?.name || user.name || user.email)}</AvatarFallback>
+                              <AvatarFallback>{getInitials(user.email)}</AvatarFallback>
                             </Avatar>
                             <div>
-                              <div className="font-medium">{user.user_metadata?.name || user.name || 'No Name'}</div>
+                              <div className="font-medium">{user.user_metadata?.name || user.email.split('@')[0]}</div>
                               <div className="text-gray-500 text-xs">{user.email}</div>
                             </div>
                           </div>
@@ -354,7 +305,7 @@ const Users = () => {
                           )}
                         </td>
                         <td className="px-4 py-3">
-                          {isUserAdmin(user) ? (
+                          {user.user_metadata?.isAdmin ? (
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                               <Shield className="w-3 h-3 mr-1" />
                               Admin
@@ -381,7 +332,7 @@ const Users = () => {
                           </td>
                         )}
                         <td className="px-4 py-3 text-right space-x-2">
-                          {!isUserAdmin(user) && (
+                          {!user.user_metadata?.isAdmin && (
                             <Button
                               variant="outline"
                               size="sm"
@@ -394,7 +345,7 @@ const Users = () => {
                             </Button>
                           )}
                           
-                          {isUserAdmin(user) && (
+                          {user.user_metadata?.isAdmin && (
                             <Button
                               variant="outline"
                               size="sm"
