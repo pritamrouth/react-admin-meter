@@ -42,17 +42,12 @@ const Users = () => {
         throw error;
       }
       
-      // If using non-admin client or mock, fallback to RLS-compatible approach
-      if (!data || !data.users) {
-        const { data: fallbackData } = await supabase
-          .from('users')
-          .select('*');
-          
-        if (fallbackData) {
-          setUsers(fallbackData);
-        }
-      } else {
+      // Extract users from the data
+      if (data && data.users) {
         setUsers(data.users);
+        console.log('Fetched users:', data.users);
+      } else {
+        console.log('No users found in the data');
       }
     } catch (error: any) {
       console.error('Error fetching users:', error.message);
@@ -235,114 +230,116 @@ const Users = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {users.map((user) => (
-                    <tr key={user.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3">
-                        <div>
-                          <div className="font-medium">{user.user_metadata?.name || 'No Name'}</div>
-                          <div className="text-gray-500">{user.email}</div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        {user.user_metadata?.banned ? (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                            <XCircle className="w-3 h-3 mr-1" />
-                            Banned
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            Active
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        {isUserAdmin(user) ? (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                            <Shield className="w-3 h-3 mr-1" />
-                            Admin
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            User
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-gray-500">
-                        {formatDate(user.created_at)}
-                      </td>
-                      <td className="px-4 py-3 text-right space-x-2">
-                        {!isUserAdmin(user) && (
+                  {users.length > 0 ? (
+                    users.map((user) => (
+                      <tr key={user.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3">
+                          <div>
+                            <div className="font-medium">{user.user_metadata?.name || 'No Name'}</div>
+                            <div className="text-gray-500">{user.email}</div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          {user.user_metadata?.banned ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                              <XCircle className="w-3 h-3 mr-1" />
+                              Banned
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              <CheckCircle className="w-3 h-3 mr-1" />
+                              Active
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          {isUserAdmin(user) ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                              <Shield className="w-3 h-3 mr-1" />
+                              Admin
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              User
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-gray-500">
+                          {formatDate(user.created_at)}
+                        </td>
+                        <td className="px-4 py-3 text-right space-x-2">
+                          {!isUserAdmin(user) && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleToggleAdmin(user.id, true)}
+                              disabled={actionLoading === user.id}
+                              className="h-8 px-2"
+                            >
+                              <Shield className="h-4 w-4" />
+                              <span className="sr-only">Make Admin</span>
+                            </Button>
+                          )}
+                          
+                          {isUserAdmin(user) && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleToggleAdmin(user.id, false)}
+                              disabled={actionLoading === user.id}
+                              className="h-8 px-2"
+                            >
+                              <UserCog className="h-4 w-4" />
+                              <span className="sr-only">Remove Admin</span>
+                            </Button>
+                          )}
+                          
+                          {!user.user_metadata?.banned ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleBanUser(user.id, true)}
+                              disabled={actionLoading === user.id}
+                              className="h-8 px-2"
+                            >
+                              <UserX className="h-4 w-4" />
+                              <span className="sr-only">Ban User</span>
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleBanUser(user.id, false)}
+                              disabled={actionLoading === user.id}
+                              className="h-8 px-2 text-green-600 border-green-200 hover:bg-green-50"
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                              <span className="sr-only">Unban User</span>
+                            </Button>
+                          )}
+                          
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleToggleAdmin(user.id, true)}
+                            onClick={() => handleDeleteUser(user.id)}
                             disabled={actionLoading === user.id}
-                            className="h-8 px-2"
+                            className="h-8 px-2 text-red-600 border-red-200 hover:bg-red-50"
                           >
-                            <Shield className="h-4 w-4" />
-                            <span className="sr-only">Make Admin</span>
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Delete</span>
                           </Button>
-                        )}
-                        
-                        {isUserAdmin(user) && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleToggleAdmin(user.id, false)}
-                            disabled={actionLoading === user.id}
-                            className="h-8 px-2"
-                          >
-                            <UserCog className="h-4 w-4" />
-                            <span className="sr-only">Remove Admin</span>
-                          </Button>
-                        )}
-                        
-                        {!user.user_metadata?.banned ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleBanUser(user.id, true)}
-                            disabled={actionLoading === user.id}
-                            className="h-8 px-2"
-                          >
-                            <UserX className="h-4 w-4" />
-                            <span className="sr-only">Ban User</span>
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleBanUser(user.id, false)}
-                            disabled={actionLoading === user.id}
-                            className="h-8 px-2 text-green-600 border-green-200 hover:bg-green-50"
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                            <span className="sr-only">Unban User</span>
-                          </Button>
-                        )}
-                        
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeleteUser(user.id)}
-                          disabled={actionLoading === user.id}
-                          className="h-8 px-2 text-red-600 border-red-200 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          <span className="sr-only">Delete</span>
-                        </Button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={5} className="text-center py-8 text-gray-500">
+                        No users found
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
-              
-              {users.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  No users found
-                </div>
-              )}
             </div>
           )}
         </CardContent>

@@ -27,9 +27,39 @@ export const supabase = (() => {
         }),
         signOut: async () => ({ error: null }),
         admin: {
-          listUsers: async () => ({ data: null, error: null }),
-          deleteUser: async () => ({ error: null }),
-          updateUserById: async () => ({ error: null })
+          listUsers: async () => ({ 
+            data: { 
+              users: [
+                {
+                  id: '1',
+                  email: 'admin@example.com',
+                  created_at: new Date().toISOString(),
+                  user_metadata: { name: 'Admin User', isAdmin: true, role: 'admin' }
+                },
+                {
+                  id: '2',
+                  email: 'user@example.com',
+                  created_at: new Date().toISOString(),
+                  user_metadata: { name: 'Regular User', isAdmin: false, role: 'user' }
+                },
+                {
+                  id: '3',
+                  email: 'banned@example.com',
+                  created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+                  user_metadata: { name: 'Banned User', isAdmin: false, role: 'user', banned: true }
+                },
+                {
+                  id: '4',
+                  email: 'pritamrouth2003@gmail.com',
+                  created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+                  user_metadata: { name: 'Pritam Routh', isAdmin: true, role: 'admin' }
+                }
+              ]
+            }, 
+            error: null 
+          }),
+          deleteUser: async (id) => ({ error: null }),
+          updateUserById: async (id, data) => ({ error: null })
         }
       },
       from: () => ({
