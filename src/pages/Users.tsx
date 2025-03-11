@@ -14,7 +14,9 @@ import {
   CheckCircle,
   XCircle 
 } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
+// Define our own User interface to match what we expect from Supabase
 interface User {
   id: string;
   email: string;
@@ -42,12 +44,19 @@ const Users = () => {
         throw error;
       }
       
-      // Extract users from the data
+      // Extract users from the data and ensure they match our interface
       if (data && data.users) {
-        setUsers(data.users);
-        console.log('Fetched users:', data.users);
+        const formattedUsers = data.users.map(user => ({
+          id: user.id,
+          email: user.email || '',
+          created_at: user.created_at,
+          user_metadata: user.user_metadata || {}
+        }));
+        setUsers(formattedUsers as User[]);
+        console.log('Fetched users:', formattedUsers);
       } else {
         console.log('No users found in the data');
+        setUsers([]);
       }
     } catch (error: any) {
       console.error('Error fetching users:', error.message);
@@ -56,6 +65,7 @@ const Users = () => {
         description: `Failed to load users: ${error.message}`,
         variant: "destructive"
       });
+      setUsers([]);
     } finally {
       setLoading(false);
     }
@@ -188,6 +198,15 @@ const Users = () => {
     });
   };
 
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
+  };
+
   return (
     <SidebarLayout>
       <div className="mb-6">
@@ -220,7 +239,7 @@ const Users = () => {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50">
+                <thead className="bg-gray-50 border-b">
                   <tr>
                     <th className="px-4 py-3 text-left font-medium text-gray-500">USER</th>
                     <th className="px-4 py-3 text-left font-medium text-gray-500">STATUS</th>
@@ -234,9 +253,14 @@ const Users = () => {
                     users.map((user) => (
                       <tr key={user.id} className="hover:bg-gray-50">
                         <td className="px-4 py-3">
-                          <div>
-                            <div className="font-medium">{user.user_metadata?.name || 'No Name'}</div>
-                            <div className="text-gray-500">{user.email}</div>
+                          <div className="flex items-center space-x-3">
+                            <Avatar className="h-8 w-8">
+                              <AvatarFallback>{getInitials(user.user_metadata?.name || user.email)}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <div className="font-medium">{user.user_metadata?.name || 'No Name'}</div>
+                              <div className="text-gray-500 text-xs">{user.email}</div>
+                            </div>
                           </div>
                         </td>
                         <td className="px-4 py-3">
