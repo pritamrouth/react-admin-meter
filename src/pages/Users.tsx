@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
-import { SidebarLayout } from '@/components/layout/SidebarLayout';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { supabase, isUserAdmin } from '@/lib/supabase';
-import { useToast } from '@/hooks/use-toast';
+import { SidebarLayout } from '../components/layout/SidebarLayout';
+import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { supabase, isUserAdmin, fetchRegisteredUsers } from '../lib/supabase';
+import { useToast } from '../hooks/use-toast';
+
 import { 
   Shield, 
   UserX, 
@@ -15,7 +15,7 @@ import {
   XCircle 
 } from 'lucide-react';
 
-interface User {
+interface LocalUser {
   id: string;
   email: string;
   created_at: string;
@@ -24,164 +24,37 @@ interface User {
     isAdmin?: boolean;
     role?: string;
     banned?: boolean;
-  };
+  } | null; // Allow user_metadata to be null
 }
 
 const Users = () => {
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<LocalUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const { toast } = useToast();
   
-  const fetchUsers = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.auth.admin.listUsers();
-      
-      if (error) {
-        throw error;
-      }
-      
-      // If using non-admin client or mock, fallback to RLS-compatible approach
-      if (!data || !data.users) {
-        const { data: fallbackData } = await supabase
-          .from('users')
-          .select('*');
-          
-        if (fallbackData) {
-          setUsers(fallbackData);
-        }
-      } else {
-        setUsers(data.users);
-      }
-    } catch (error: any) {
-      console.error('Error fetching users:', error.message);
-      toast({
-        title: "Error",
-        description: `Failed to load users: ${error.message}`,
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+// Modify the fetchUsers function in Users.tsx
+// Modify the fetchUsers function in Users.tsx
+const fetchUsers = async () => {
+  setLoading(true);
+  try {
+    const users = await fetchRegisteredUsers();
+    setUsers(users.map(user => ({
+      ...user,
+      user_metadata: user.user_metadata || null
+    })));
+  } catch (error: any) {
+    console.error('Error fetching users:', error.message);
+    toast({
+      title: "Error",
+      description: `Failed to load users: ${error.message}`,
+      variant: "destructive"
+    });
+  } finally {
+    setLoading(false);
+  }
+};
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const handleBanUser = async (userId: string, isBanned: boolean) => {
-    setActionLoading(userId);
-    try {
-      // Update user metadata to mark as banned
-      const { error } = await supabase.auth.admin.updateUserById(
-        userId,
-        { user_metadata: { banned: isBanned } }
-      );
-      
-      if (error) throw error;
-      
-      // Update local state
-      setUsers(users.map(user => 
-        user.id === userId 
-          ? { ...user, user_metadata: { ...user.user_metadata, banned: isBanned } } 
-          : user
-      ));
-      
-      toast({
-        title: "Success",
-        description: `User ${isBanned ? 'banned' : 'unbanned'} successfully`,
-        variant: "default"
-      });
-    } catch (error: any) {
-      console.error(`Error ${isBanned ? 'banning' : 'unbanning'} user:`, error.message);
-      toast({
-        title: "Error",
-        description: `Failed to ${isBanned ? 'ban' : 'unban'} user: ${error.message}`,
-        variant: "destructive"
-      });
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleDeleteUser = async (userId: string) => {
-    if (!window.confirm("Are you sure you want to delete this user? This action cannot be undone.")) {
-      return;
-    }
-    
-    setActionLoading(userId);
-    try {
-      const { error } = await supabase.auth.admin.deleteUser(userId);
-      
-      if (error) throw error;
-      
-      // Remove from local state
-      setUsers(users.filter(user => user.id !== userId));
-      
-      toast({
-        title: "Success",
-        description: "User deleted successfully",
-        variant: "default"
-      });
-    } catch (error: any) {
-      console.error('Error deleting user:', error.message);
-      toast({
-        title: "Error",
-        description: `Failed to delete user: ${error.message}`,
-        variant: "destructive"
-      });
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleToggleAdmin = async (userId: string, isAdmin: boolean) => {
-    setActionLoading(userId);
-    try {
-      // Update user metadata to toggle admin status
-      const { error } = await supabase.auth.admin.updateUserById(
-        userId,
-        { 
-          user_metadata: { 
-            isAdmin: isAdmin,
-            role: isAdmin ? 'admin' : 'user'
-          } 
-        }
-      );
-      
-      if (error) throw error;
-      
-      // Update local state
-      setUsers(users.map(user => 
-        user.id === userId 
-          ? { 
-              ...user, 
-              user_metadata: { 
-                ...user.user_metadata, 
-                isAdmin: isAdmin,
-                role: isAdmin ? 'admin' : 'user' 
-              } 
-            } 
-          : user
-      ));
-      
-      toast({
-        title: "Success",
-        description: `User ${isAdmin ? 'promoted to admin' : 'demoted from admin'} successfully`,
-        variant: "default"
-      });
-    } catch (error: any) {
-      console.error(`Error changing admin status:`, error.message);
-      toast({
-        title: "Error",
-        description: `Failed to change admin status: ${error.message}`,
-        variant: "destructive"
-      });
-    } finally {
-      setActionLoading(null);
-    }
-  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -235,7 +108,7 @@ const Users = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {users.map((user) => (
+                  {users.map((user: LocalUser) => (
                     <tr key={user.id} className="hover:bg-gray-50">
                       <td className="px-4 py-3">
                         <div>
@@ -257,7 +130,8 @@ const Users = () => {
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        {isUserAdmin(user) ? (
+                        {isUserAdmin(user) || user.user_metadata?.role === 'admin' ? (
+
                           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                             <Shield className="w-3 h-3 mr-1" />
                             Admin

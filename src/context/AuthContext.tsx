@@ -1,8 +1,7 @@
-
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { supabase, ADMIN_EMAIL } from '@/lib/supabase';
+import { supabase, ADMIN_EMAIL } from '../lib/supabase';
+import { toast } from '../hooks/use-toast';
 import { Session, User } from '@supabase/supabase-js';
-import { toast } from '@/hooks/use-toast';
 
 type AuthContextType = {
   session: Session | null;
@@ -23,7 +22,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const setupAuth = async () => {
       try {
-        // Get initial session
         const { data: { session: initialSession }, error } = await supabase.auth.getSession();
         if (error) {
           console.warn('Auth session error:', error.message);
@@ -33,68 +31,62 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setSession(initialSession);
           setUser(initialSession.user);
           
+          // Log user roles
+          const userMetadata = initialSession.user.user_metadata;
+          const role = userMetadata?.role;
+
           // Check if user is admin
           if (initialSession.user) {
-            // First check if email matches admin email for quick access
             if (initialSession.user.email === ADMIN_EMAIL) {
+              console.log('User is admin via ADMIN_EMAIL match');
               setIsAdmin(true);
             } else {
-              try {
-                const { data, error } = await supabase
-                  .from('user_roles')
-                  .select('role')
-                  .eq('user_id', initialSession.user.id)
-                  .single();
-                  
-                if (!error && data && data.role === 'admin') {
-                  setIsAdmin(true);
-                }
-              } catch (error) {
-                console.warn('Error checking admin status:', error);
-              }
+              const isAdminFromTable = role === 'admin';
+              console.log(`User admin status from table: ${isAdminFromTable}`);
+              setIsAdmin(isAdminFromTable);
             }
           }
         }
 
-        // Listen for auth changes
         const { data: authListener } = supabase.auth.onAuthStateChange(
           async (event, newSession) => {
             if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
               setSession(newSession);
               setUser(newSession?.user || null);
               
-              // Check if user is admin
+              const userMetadata = newSession.user.user_metadata;
+              const role = userMetadata?.role;
+
               if (newSession?.user) {
-                if (newSession.user.email === ADMIN_EMAIL) {
+                const isAdminUser = 
+                  newSession.user.email === ADMIN_EMAIL ||
+                  newSession.user.user_metadata?.role === 'admin' ||
+                  newSession.user.user_metadata?.isAdmin === true;
+                
+                if (isAdminUser) {
+                  console.log('User is admin via metadata check');
                   setIsAdmin(true);
                 } else {
-                  try {
-                    const { data, error } = await supabase
-                      .from('user_roles')
-                      .select('role')
-                      .eq('user_id', newSession.user.id)
-                      .single();
-                      
-                    if (!error && data && data.role === 'admin') {
-                      setIsAdmin(true);
-                    } else {
-                      setIsAdmin(false);
-                    }
-                  } catch (error) {
-                    console.warn("Error checking admin status:", error);
-                    setIsAdmin(false);
-                  }
+                  const isAdminFromTable = role === 'admin';
+                  console.log(`User admin status from table: ${isAdminFromTable}`);
+                  setIsAdmin(isAdminFromTable);
                 }
               }
             }
             
-            if (event === 'SIGNED_OUT') {
-              setSession(null);
-              setUser(null);
-              setIsAdmin(false);
-            }
-          }
-        );
+            supabase.auth.onAuthStateChange((event, session) => {
+              if (event === 'SIGNED_IN') {
+                setSession(session);
+                setUser(session?.user || null);
+              }
+              if (event === 'SIGNED_OUT') {
+                setSession(null);
+                setUser(null);
+              }
+            });
+          }, []);
+          
+          
 
         setLoading(false);
         

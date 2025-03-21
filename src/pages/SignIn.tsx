@@ -25,31 +25,50 @@ const SignIn = () => {
         throw new Error('No internet connection');
       }
   
-      const { data: { user }, error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
       });
-  
-      if (error) throw error;
-  
+
+      if (error) {
+        console.error('Sign in error:', error);
+        throw error;
+      }
+
+      // Verify session exists
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No session created');
+      }
+
+      // Verify user exists
+      if (!data.user) {
+        throw new Error('No user returned');
+      }
+
+      const isAdmin = await isUserAdmin(data.user);
+      
       toast({
-        title: "Welcome back Administrator!",
+        title: isAdmin ? "Welcome back Administrator!" : "Welcome back!",
         description: "You have successfully signed in.",
       });
-  
-      const isAdmin = await isUserAdmin(user);
-      if (isAdmin) {
-        navigate("/dashboard");
-      } else {
-        navigate("/");
-      }
+
+      navigate(isAdmin ? "/dashboard" : "/");
+
     } catch (error: any) {
+      console.error('Authentication error:', error);
       setError(error.message);
       toast({
         title: "Sign in failed",
-        description: error.message,
+        description: error.message || 'Authentication failed. Please try again.',
         variant: "destructive",
       });
+      // Clear form on error
+      setFormData({
+        email: '',
+        password: ''
+      });
+
     } finally {
       setIsSubmitting(false);
     }
